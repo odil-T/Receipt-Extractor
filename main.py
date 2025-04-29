@@ -1,33 +1,31 @@
-# Receipt Extractor
+"""
+Receipt Extractor
 
-import re
+Specify the following variables:
+1. RECEIPT_FOLDER_PATH - Path to the folder containing the receipt images that must be processed.
+2. EXCEL_PATH - Path to the excel workbook where the processed data should be stored. Create this file manually if it does not exist.
+3. TESSERACT_PATH - Path to Tesseract OCR executable.
+
+TODO:
+- function docs
+"""
+
+import os
 import pandas as pd
-from PIL import Image
 import pytesseract
 
+from utils import parse_receipts, append_data_to_excel
 
-original_image = 'images/receipt.webp'
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Users\o.tohirov\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
-raw_text = pytesseract.image_to_string(Image.open(original_image), lang="eng+rus")
+RECEIPT_FOLDER_PATH = "receipts"
+EXCEL_PATH = "analytics.xlsx"
+TESSERACT_PATH = r"C:\Users\o.tohirov\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
 
-match_date = re.search(r"\d{2}\.\d{2}\.\d{4}", raw_text)
-match_total = re.search(r"(?<=оБщий ).*", raw_text, re.IGNORECASE)
-match_location = re.search(r"г\..+", raw_text)
+pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
 
-date = match_date.group() if match_date else None
-total = match_total.group() if match_total else None
-location = match_location.group() if match_location else None
+if __name__ == "__main__":
+    assert os.path.exists(EXCEL_PATH), f"File {EXCEL_PATH} does not exist. Please create this file manually."
 
-item_info_pattern = re.compile(r"[*=]|\d+шт")
-
-for line in raw_text.splitlines():
-    if item_info_pattern.search(line):
-        match_item_name = re.search(r"^[A-Za-zА-Яа-яёЁ\s']*(?=[^A-Za-zА-Яа-яёЁ']|$)", line)
-        match_item_quantity = re.search(r"[\d.]+(?=\*)", line)
-        match_item_price = re.search(r"(?<=\*)[\d,.]+(?=[^\d,.]|$)", line)
-
-        item_name = match_item_name.group().strip() if match_item_name else None
-        item_quantity = match_item_quantity.group().strip() if match_item_quantity else None
-        item_price = match_item_price.group().replace(",", "") if match_item_price else None
-
+    item_data_dict = parse_receipts(RECEIPT_FOLDER_PATH)
+    df = pd.DataFrame(item_data_dict)
+    append_data_to_excel(EXCEL_PATH, df)
