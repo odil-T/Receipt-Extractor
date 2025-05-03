@@ -1,13 +1,7 @@
 """
-Receipt Extractor
-
-Specify the following variables:
 1. RECEIPT_FOLDER_PATH - Path to the folder containing the receipt images that must be processed.
 2. EXCEL_PATH - Path to the excel workbook where the processed data should be stored. Create this file manually if it does not exist.
 3. TESSERACT_PATH - Path to Tesseract OCR executable.
-
-TODO:
-- function docs
 """
 
 import os

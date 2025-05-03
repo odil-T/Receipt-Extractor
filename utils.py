@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import pandas as pd
 import pytesseract
 
@@ -8,9 +9,31 @@ from typing import Dict, Union
 
 
 def parse_receipts(receipts_folder_path: str) -> Union[Dict, None]:
-    """"""
+    """
+    Parses images of receipts from the provided folder path. Uses Tesseract OCR and RegEx to extract the product name,
+    quantity of product, unit price of product, location, and date given on the receipt. Stores the results as a dictionary
+    where one row represents one product.
+
+    Args:
+        receipts_folder_path: Path to the folder containing the images of receipts to be parsed.
+
+    Returns:
+        dict: A dictionary with keys "Product Name", "Quantity", "Unit Price", "Location", "Date" that have lists as values
+        that store the product data.
+    """
 
     def _parse_receipt(image_path: str, item_data_dict: Dict) -> None:
+        """
+        A helper function to parse a single receipt. Updates the item_data_dict dictionary with the parsed data.
+
+        Args:
+            image_path: Path to the image of a receipt to be parsed.
+            item_data_dict: A dictionary with keys "Product Name", "Quantity", "Unit Price", "Location", "Date" that have lists as values
+        that store the product data.
+
+        Returns:
+            None
+        """
         print(f"Parsing receipt: {image_path}")
 
         raw_text = pytesseract.image_to_string(Image.open(image_path), lang="eng+rus")
@@ -54,8 +77,18 @@ def parse_receipts(receipts_folder_path: str) -> Union[Dict, None]:
 
 
 def append_data_to_excel(excel_path: str, output_df: pd.DataFrame) -> None:
+    """
+    Appends the data from a dataframe to the specified Excel file.
+
+    Args:
+        excel_path: Path to Excel file to append data to.
+        output_df: The dataframe that must be appended.
+
+    Returns:
+        None
+    """
     if output_df.empty:
-        print("No changes were made.")
+        print(f"No changes were made to file {excel_path}.")
         return
 
     output_df.insert(0, "No.", range(1, len(output_df) + 1))
@@ -65,6 +98,11 @@ def append_data_to_excel(excel_path: str, output_df: pd.DataFrame) -> None:
         last_no = existing_df["No."].iloc[-1]
         output_df["No."] += last_no
         output_df = pd.concat([existing_df, output_df])
+
+        # Backing up the original Excel file just in case
+        backup_path = f'{excel_path[:-5]}_backup.xlsx'
+        shutil.copy2(excel_path, backup_path)
+        print(f"Backup of file {excel_path} was created at {backup_path}.")
 
     output_df.to_excel(excel_path, index=False)
 
